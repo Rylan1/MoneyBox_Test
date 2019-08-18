@@ -8,6 +8,10 @@ import android.widget.EditText
 import android.widget.Toast
 import com.airbnb.lottie.LottieAnimationView
 import java.util.regex.Pattern
+import android.animation.Animator
+import android.animation.AnimatorListenerAdapter
+
+
 
 /**
  * A login screen that offers login via email/password.
@@ -55,30 +59,42 @@ class LoginActivity : AppCompatActivity() {
 
     private fun allFieldsValid() : Boolean {
         var allValid = false
-
+        var score = 0
         if (Pattern.matches(EMAIL_REGEX, et_email.text.toString())) {
-            allValid = true
+            score++
         } else {
             til_email.error = getString(R.string.email_address_error)
+
         }
 
         if (Pattern.matches(PASSWORD_REGEX, et_password.text.toString())) {
-            allValid = true
+
+            score++
         } else {
             til_password.error = getString(R.string.password_error)
         }
+        if (Pattern.matches(NAME_REGEX, et_name.text.toString())||et_name.text.toString().isEmpty()) {
 
-        if (Pattern.matches(NAME_REGEX, et_password.text.toString())) {
-            allValid = true
+            score++
         } else {
-            til_email.error = getString(R.string.full_name_error)
+                til_name.error = getString(R.string.full_name_error)
         }
-
+        if(score==3){
+            allValid = true
+        }
         return allValid
     }
 
     private fun setupAnimation() {
+        pigAnimation.setMinAndMaxFrame(firstAnim.first, firstAnim.second)
         pigAnimation.playAnimation()
+        pigAnimation.addAnimatorListener(object : AnimatorListenerAdapter() {
+            override fun onAnimationEnd(animation: Animator) {
+                pigAnimation.setMinAndMaxFrame(secondAnim.first, secondAnim.second)
+                pigAnimation.playAnimation()
+            }
+        })
+
     }
 
     companion object {
