@@ -10,7 +10,17 @@ import com.airbnb.lottie.LottieAnimationView
 import java.util.regex.Pattern
 import android.animation.Animator
 import android.animation.AnimatorListenerAdapter
-
+import android.content.Intent
+import android.widget.TextView
+import com.example.minimoneybox.Model.AllData
+import com.example.minimoneybox.Model.Post
+import com.example.minimoneybox.Model.authToken
+import okhttp3.OkHttpClient
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 
 /**
@@ -26,11 +36,24 @@ class LoginActivity : AppCompatActivity() {
     lateinit var til_name : TextInputLayout
     lateinit var et_name : EditText
     lateinit var pigAnimation : LottieAnimationView
-
+    lateinit var apicall:ApiCall
+    lateinit var tempdata: AllData
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_login)
         setupViews()
+        val okHttpClient = OkHttpClient.Builder().addInterceptor { chain ->
+            val request = chain.request().newBuilder()
+                .addHeader("AppId", "3a97b932a9d449c981b595")
+                .addHeader("Content-Type", "application/json")
+                .addHeader("appVersion", "5.10.0")
+                .addHeader("apiVersion", "3.0.0").build()
+            chain.proceed(request)
+        }.build()
+        val retrofit=Retrofit.Builder().baseUrl("https://api-test01.moneyboxapp.com/")
+            .addConverterFactory(GsonConverterFactory.create()).client(okHttpClient).build()
+        apicall = retrofit.create(ApiCall::class.java)
+
     }
 
     override fun onStart() {
@@ -62,6 +85,7 @@ class LoginActivity : AppCompatActivity() {
         var score = 0
         if (Pattern.matches(EMAIL_REGEX, et_email.text.toString())) {
             score++
+
         } else {
             til_email.error = getString(R.string.email_address_error)
 
@@ -81,6 +105,12 @@ class LoginActivity : AppCompatActivity() {
         }
         if(score==3){
             allValid = true
+            createPost(et_email.text.toString(),et_password.text.toString())
+            tempdata = AllData(
+                et_email.text.toString(),
+                et_password.text.toString(),
+                et_name.text.toString()
+            )
         }
         return allValid
     }
@@ -103,5 +133,28 @@ class LoginActivity : AppCompatActivity() {
         val PASSWORD_REGEX = "^(?=.*[0-9])(?=.*[A-Z]).{10,50}$"
         val firstAnim = 0 to 109
         val secondAnim = 131 to 158
+    }
+
+    private fun createPost( email:String, password:String) {
+        val post = Post(email, password, "ANYTHING")
+        val call:Call<authToken> = apicall.crPost(post)
+        call.enqueue(object : Callback<authToken> {
+            override fun onResponse(call: Call<authToken>, response: Response<authToken>) {
+                if (!response.isSuccessful) {
+                }
+                else{
+                tempdata.setTolken(response.body()!!.session.bearerToken)
+                val intent=Intent(this@LoginActivity,UserActivity::class.java)
+                    intent.putExtra("TOKEN",tempdata.getTolken())
+                    intent.putExtra("NAME",tempdata.getUsername())
+                startActivity(intent)
+                }
+            }
+
+            override fun onFailure(call: Call<authToken>, t: Throwable) {
+
+            }
+        })
+
     }
 }
